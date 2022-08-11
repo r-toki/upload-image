@@ -1,12 +1,10 @@
 use dotenv::dotenv;
-use reqwest::{multipart, Body, Client};
+use reqwest::{multipart, Client};
 use sha1::{Digest, Sha1};
 use std::env;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tempfile::Builder;
 use tokio::fs::File;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio_util::codec::{BytesCodec, FramedRead};
+use tokio::io::AsyncReadExt;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -32,14 +30,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let encoded = base64::encode(&buffer);
 
     let decoded = base64::decode(encoded)?;
-    let tmpfile = Builder::new().tempfile()?;
-    let mut file = File::create(&tmpfile.path()).await?;
-    file.write_all(&decoded).await?;
-
-    let file = File::open(tmpfile.path()).await?;
-    let stream = FramedRead::new(file, BytesCodec::new());
-    let body = Body::wrap_stream(stream);
-    let file = multipart::Part::stream(body)
+    let file = multipart::Part::stream(decoded)
         .file_name("50kb.jpg")
         .mime_str("image/jpeg")?;
 
