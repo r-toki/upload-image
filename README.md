@@ -1,0 +1,10 @@
+- create
+  - [x] load from local
+  - [x] encode
+  - [x] create in temp
+  - [] upload
+- get
+  - load via public url
+  - encode
+- img tag
+  - data:image/jpeg;base64,xxx...
