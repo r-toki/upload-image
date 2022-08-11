@@ -2,7 +2,7 @@
   - [x] load from local
   - [x] encode
   - [x] create in temp
-  - [] upload
+  - [x] upload
 - get
   - load via public url
   - encode
