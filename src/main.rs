@@ -64,7 +64,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let form = multipart::Form::new()
         .part("file", file)
-        .text("api_key", cloudinary_api_key)
+        .text("api_key", cloudinary_api_key.clone())
         .text("folder", folder)
         .text("timestamp", timestamp.to_string())
         .text("signature", signature);
@@ -90,6 +90,32 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let encoded = base64::encode(res.bytes().await?);
     let mut file = File::create("storage/encoded.txt").await?;
     file.write_all(encoded.as_bytes()).await?;
+
+    let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+    let mut signature = Sha1::new();
+    signature.update(format!(
+        "public_id={}&timestamp={}{}",
+        extracted.public_id, timestamp, cloudinary_api_secret
+    ));
+    let signature = hex::encode(signature.finalize());
+
+    let form = multipart::Form::new()
+        .text("api_key", cloudinary_api_key.clone())
+        .text("public_id", extracted.public_id.clone())
+        .text("timestamp", timestamp.to_string())
+        .text("signature", signature);
+
+    let res = client
+        .post(format!(
+            "https://api.cloudinary.com/v1_1/{}/image/destroy",
+            cloudinary_cloud_name
+        ))
+        .multipart(form)
+        .send()
+        .await?;
+
+    println!("----------------");
+    println!("{:?}", res);
 
     Ok(())
 }

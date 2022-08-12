@@ -4,7 +4,9 @@
   - [x] create in temp
   - [x] upload
 - get
-  - load via public url
-  - encode
+  - [x] load via public url
+  - [x] encode
+- destroy
+  - [x] destroy
 - img tag
   - data:image/jpeg;base64,xxx...
