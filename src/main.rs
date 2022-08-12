@@ -1,10 +1,37 @@
 use dotenv::dotenv;
 use reqwest::{multipart, Client};
+use serde::Deserialize;
 use sha1::{Digest, Sha1};
 use std::env;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::fs::File;
-use tokio::io::AsyncReadExt;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use uuid::Uuid;
+
+#[derive(Debug, Deserialize)]
+struct ImageUploadResponse {
+    // asset_id: String,
+    public_id: String,
+    // version: u64,
+    // version_id: String,
+    // signature: String,
+    // width: u64,
+    // height: u64,
+    format: String,
+    resource_type: String,
+    // created_at: String,
+    // tags: Vec<String>,
+    // bytes: u64,
+    // r#type: String,
+    // etag: String,
+    // placeholder: bool,
+    // url: String,
+    secure_url: String,
+    // folder: String,
+    // original_filename: String,
+    // original_extension: String,
+    // api_key: String,
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -30,8 +57,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let encoded = base64::encode(&buffer);
 
     let decoded = base64::decode(encoded)?;
+    let filename = Uuid::new_v4().to_string() + ".jpeg";
     let file = multipart::Part::stream(decoded)
-        .file_name("50kb.jpg")
+        .file_name(filename)
         .mime_str("image/jpeg")?;
 
     let form = multipart::Form::new()
@@ -51,8 +79,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .multipart(form)
         .send()
         .await?;
-
     println!("{:?}", res);
+    let text = res.text().await?;
+    let extracted: ImageUploadResponse = serde_json::from_str(&text)?;
+    println!("{:?}", extracted);
+
+    let secure_url = extracted.secure_url;
+    let res = reqwest::get(secure_url).await?;
+    println!("{:?}", res);
+    let encoded = base64::encode(res.bytes().await?);
+    let mut file = File::create("storage/encoded.txt").await?;
+    file.write_all(encoded.as_bytes()).await?;
 
     Ok(())
 }
